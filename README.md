@@ -26,22 +26,19 @@ CodeSentry analyzes Python code using four specialized AI agents running in para
 
 ## Architecture
 
-Input (file/repo)
-│
-▼
-┌─────────────────────────────┐
-│ LangGraph Orchestrator │
-│ (shared state, parallel) │
-└──────────────┬───────────────┘
-┌────────┼────────┬────────┐
-▼ ▼ ▼ ▼
-Static Security Doc Test
-Analyzer Scanner Generator Generator
-└────────┴────────┴────────┘
-▼
-Aggregator
-▼
-Unified Report
+```mermaid
+flowchart TD
+    A[Input: File or Repo] --> B[LangGraph Orchestrator]
+    B --> C[Static Analyzer Agent]
+    B --> D[Security Scanner Agent]
+    B --> E[Doc Generator Agent]
+    B --> F[Test Generator Agent]
+    C --> G[Aggregator]
+    D --> G
+    E --> G
+    F --> G
+    G --> H[Unified Report]
+```
 
 
 ## Setup
