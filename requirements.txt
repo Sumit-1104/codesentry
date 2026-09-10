@@ -12,3 +12,4 @@ bandit==1.7.9
 python-dotenv==1.0.1
 pydantic==2.9.0
 pytest==8.3.2
+openai
