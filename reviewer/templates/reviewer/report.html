@@ -1,63 +1,230 @@
 <!DOCTYPE html>
 <html>
+
 <head>
-    <title>CodeSentry Report</title>
+    <title>CodeSentry</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
+        rel="stylesheet">
     <style>
-        body { font-family: Arial, sans-serif; max-width: 900px; margin: 40px auto; padding: 20px; background: #f5f5f5; }
-        h1 { color: #2c3e50; }
-        h2 { color: #34495e; border-bottom: 2px solid #ddd; padding-bottom: 5px; }
-        h3 { background: #2c3e50; color: white; padding: 10px 15px; border-radius: 6px; margin-top: 30px; }
-        .issue { background: white; padding: 10px; margin: 8px 0; border-left: 4px solid #e74c3c; border-radius: 4px; }
-        .issue.warning { border-left-color: #f39c12; }
-        .issue.convention { border-left-color: #3498db; }
-        pre { background: #2c3e50; color: #ecf0f1; padding: 15px; border-radius: 6px; overflow-x: auto; }
-        .upload-box { background: white; padding: 30px; border-radius: 8px; text-align: center; }
-        input[type="submit"] { background: #3498db; color: white; border: none; padding: 10px 25px; border-radius: 5px; cursor: pointer; margin-top: 10px; }
+        :root {
+            --bg: #141414;
+            --bg-raised: #1c1c1c;
+            --text: #EDEDED;
+            --text-dim: #9A9A9A;
+            --accent: #FF7A45;
+            --border: #2A2A2A;
+            --danger: #E5484D;
+            --warning: #F5A623;
+            --info: #5B8DEF;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            max-width: 760px;
+            margin: 0 auto;
+            padding: 60px 24px 100px;
+            line-height: 1.5;
+        }
+
+        .brand {
+            display: flex;
+            align-items: baseline;
+            gap: 10px;
+            margin-bottom: 48px;
+        }
+
+        .brand .dot {
+            width: 10px;
+            height: 10px;
+            background: var(--accent);
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .brand h1 {
+            font-size: 20px;
+            font-weight: 600;
+            margin: 0;
+            letter-spacing: -0.02em;
+        }
+
+        .upload-box {
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 48px 32px;
+            text-align: center;
+            background: var(--bg-raised);
+        }
+
+        .upload-box p {
+            color: var(--text-dim);
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+
+        input[type="file"] {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            color: var(--text-dim);
+        }
+
+        input[type="submit"] {
+            background: var(--accent);
+            color: #141414;
+            border: none;
+            font-family: 'Inter', sans-serif;
+            font-weight: 600;
+            font-size: 14px;
+            padding: 10px 22px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-top: 24px;
+            display: block;
+            width: 100%;
+        }
+
+        input[type="submit"]:hover {
+            opacity: 0.9;
+        }
+
+        .file-header {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            color: var(--accent);
+            background: var(--bg-raised);
+            border: 1px solid var(--border);
+            padding: 10px 16px;
+            border-radius: 6px;
+            margin-top: 40px;
+            margin-bottom: 16px;
+        }
+
+        h2 {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-dim);
+            text-transform: none;
+            margin-top: 28px;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .issue {
+            font-size: 13.5px;
+            padding: 10px 14px;
+            margin: 6px 0;
+            border-left: 3px solid var(--info);
+            background: var(--bg-raised);
+            border-radius: 0 6px 6px 0;
+        }
+
+        .issue.warning {
+            border-left-color: var(--warning);
+        }
+
+        .issue.convention {
+            border-left-color: var(--info);
+        }
+
+        .issue.refactor {
+            border-left-color: var(--text-dim);
+        }
+
+        .no-issues {
+            font-size: 13.5px;
+            color: var(--text-dim);
+        }
+
+        pre {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12.5px;
+            background: #0F0F0F;
+            border: 1px solid var(--border);
+            color: #D4D4D4;
+            padding: 18px;
+            border-radius: 8px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+        }
+
+        a {
+            color: var(--accent);
+            text-decoration: none;
+            font-size: 14px;
+            display: inline-block;
+            margin-top: 40px;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
     </style>
 </head>
+
 <body>
-    <h1>CodeSentry</h1>
+    <div class="brand">
+        <span class="dot"></span>
+        <h1>CodeSentry</h1>
+    </div>
 
     {% if not show_results %}
-        <div class="upload-box">
-            <p>Upload a single .py file, or a .zip containing multiple files</p>
-            <form method="post" enctype="multipart/form-data">
-                {% csrf_token %}
-                <input type="file" name="code_file" accept=".py,.zip" required>
-                <br>
-                <input type="submit" value="Analyze">
-            </form>
-        </div>
+
+    <div class="upload-box">
+        {% if error %}
+        <p style="color: var(--danger);">{{ error }}</p>
+        {% endif %}
+        <p>Upload a Python file, a .zip, or paste a GitHub repo URL</p>
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <input type="text" name="github_url" placeholder="https://github.com/user/repo"
+                style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border); background: #0F0F0F; color: var(--text); font-family: 'JetBrains Mono', monospace; font-size: 13px; margin-bottom: 12px;">
+            <p style="color: var(--text-dim); font-size: 12px; margin: 8px 0;">— or —</p>
+            <input type="file" name="code_file" accept=".py,.zip">
+            <input type="submit" value="Analyze">
+        </form>
+    </div>
+
     {% else %}
-        {% for file_result in all_results %}
-            <h3>{{ file_result.filename }}</h3>
+    
+    {% for file_result in all_results %}
+    <div class="file-header">{{ file_result.filename }}</div>
 
-            <h2>Static Analysis</h2>
-            {% for issue in file_result.static_results %}
-                <div class="issue {{ issue.type }}">
-                    Line {{ issue.line }} [{{ issue.type }}]: {{ issue.message }}
-                </div>
-            {% empty %}
-                <p>No issues found.</p>
-            {% endfor %}
+    <h2>Static Analysis</h2>
+    {% for issue in file_result.static_results %}
+    <div class="issue {{ issue.type }}">
+        Line {{ issue.line }} — {{ issue.message }}
+    </div>
+    {% empty %}
+    <p class="no-issues">No issues found.</p>
+    {% endfor %}
 
-            <h2>Security Issues</h2>
-            {% for issue in file_result.security_results %}
-                <div class="issue">
-                    Line {{ issue.line }} [{{ issue.severity }}]: {{ issue.message }}
-                </div>
-            {% empty %}
-                <p>No security issues found.</p>
-            {% endfor %}
+    <h2>Security</h2>
+    {% for issue in file_result.security_results %}
+    <div class="issue warning">
+        Line {{ issue.line }} [{{ issue.severity }}] — {{ issue.message }}
+    </div>
+    {% empty %}
+    <p class="no-issues">No security issues found.</p>
+    {% endfor %}
 
-            <h2>Suggested Docstrings</h2>
-            <pre>{{ file_result.doc_results }}</pre>
+    <h2>Suggested Docstrings</h2>
+    <pre>{{ file_result.doc_results }}</pre>
 
-            <h2>Suggested Tests</h2>
-            <pre>{{ file_result.test_results }}</pre>
-        {% endfor %}
+    <h2>Suggested Tests</h2>
+    <pre>{{ file_result.test_results }}</pre>
+    {% endfor %}
 
-        <a href="/">← Analyze another file</a>
+    <a href="/">← Analyze another file</a>
     {% endif %}
 </body>
+
 </html>

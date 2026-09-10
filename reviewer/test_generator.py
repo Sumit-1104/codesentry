@@ -19,7 +19,7 @@ def generate_tests(filepath):
     Rate limit hit hone pe automatically retry karta hai.
     """
     
-    with open(filepath, "r") as f:
+    with open(filepath, "r", encoding="utf-8", errors="ignore") as f:
         code = f.read()
     
     related = search_similar_code(f"code related to: {code[:200]}", n_results=2)
