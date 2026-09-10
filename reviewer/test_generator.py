@@ -1,5 +1,6 @@
 from dotenv import load_dotenv
 import os
+import time
 from openai import OpenAI
 from rag.embedder import search_similar_code
 
@@ -15,12 +16,12 @@ def generate_tests(filepath):
     """
     Ye function ek Python file padhta hai, RAG se related context nikalta hai,
     aur Groq LLM ko bhejta hai taaki wo pytest ke format mein unit tests likhe.
+    Rate limit hit hone pe automatically retry karta hai.
     """
     
     with open(filepath, "r") as f:
         code = f.read()
     
-    # RAG se related code chunks dhoondo (poore codebase mein se)
     related = search_similar_code(f"code related to: {code[:200]}", n_results=2)
     context = "\n".join(related["documents"][0]) if related["documents"] else ""
     
@@ -36,19 +37,26 @@ Har function ke liye kam se kam 2 test cases banao:
 1. Normal/expected input ke liye
 2. Edge case (jaise zero, negative number, ya khaali input) ke liye
 
-Agar related context dikhata hai ki koi function/class kahi aur bhi use ho raha hai,
-toh us interaction ko bhi test mein consider kar sakte ho.
-
+Sirf wahi cross-reference mention karo jo related context mein explicitly dikh raha ho.
 Sirf test code do, explanation mat do. pytest format use karo (assert statements ke saath).
 """
 
-    response = client.chat.completions.create(
-        model="openai/gpt-oss-20b",
-        max_tokens=2000,
-        messages=[{"role": "user", "content": prompt}]
-    )
-    
-    return response.choices[0].message.content
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            response = client.chat.completions.create(
+                model="openai/gpt-oss-20b",
+                max_tokens=2000,
+                messages=[{"role": "user", "content": prompt}]
+            )
+            return response.choices[0].message.content
+        except Exception as e:
+            if "rate_limit" in str(e).lower() and attempt < max_retries - 1:
+                wait_time = 15
+                print(f"Rate limit hit, waiting {wait_time}s before retry...")
+                time.sleep(wait_time)
+            else:
+                raise
 
 
 if __name__ == "__main__":

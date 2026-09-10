@@ -4,3 +4,6 @@ __pycache__/
 *.pyc
 db.sqlite3
 chroma_db/
+data/extracted/
+data/temp_upload.zip
+data/uploaded_*

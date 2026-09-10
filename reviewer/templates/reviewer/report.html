@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CodeSentry Report</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 900px; margin: 40px auto; padding: 20px; background: #f5f5f5; }
+        h1 { color: #2c3e50; }
+        h2 { color: #34495e; border-bottom: 2px solid #ddd; padding-bottom: 5px; }
+        h3 { background: #2c3e50; color: white; padding: 10px 15px; border-radius: 6px; margin-top: 30px; }
+        .issue { background: white; padding: 10px; margin: 8px 0; border-left: 4px solid #e74c3c; border-radius: 4px; }
+        .issue.warning { border-left-color: #f39c12; }
+        .issue.convention { border-left-color: #3498db; }
+        pre { background: #2c3e50; color: #ecf0f1; padding: 15px; border-radius: 6px; overflow-x: auto; }
+        .upload-box { background: white; padding: 30px; border-radius: 8px; text-align: center; }
+        input[type="submit"] { background: #3498db; color: white; border: none; padding: 10px 25px; border-radius: 5px; cursor: pointer; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <h1>CodeSentry</h1>
+
+    {% if not show_results %}
+        <div class="upload-box">
+            <p>Upload a single .py file, or a .zip containing multiple files</p>
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                <input type="file" name="code_file" accept=".py,.zip" required>
+                <br>
+                <input type="submit" value="Analyze">
+            </form>
+        </div>
+    {% else %}
+        {% for file_result in all_results %}
+            <h3>{{ file_result.filename }}</h3>
+
+            <h2>Static Analysis</h2>
+            {% for issue in file_result.static_results %}
+                <div class="issue {{ issue.type }}">
+                    Line {{ issue.line }} [{{ issue.type }}]: {{ issue.message }}
+                </div>
+            {% empty %}
+                <p>No issues found.</p>
+            {% endfor %}
+
+            <h2>Security Issues</h2>
+            {% for issue in file_result.security_results %}
+                <div class="issue">
+                    Line {{ issue.line }} [{{ issue.severity }}]: {{ issue.message }}
+                </div>
+            {% empty %}
+                <p>No security issues found.</p>
+            {% endfor %}
+
+            <h2>Suggested Docstrings</h2>
+            <pre>{{ file_result.doc_results }}</pre>
+
+            <h2>Suggested Tests</h2>
+            <pre>{{ file_result.test_results }}</pre>
+        {% endfor %}
+
+        <a href="/">← Analyze another file</a>
+    {% endif %}
+</body>
+</html>
