@@ -1,8 +1,11 @@
-from django.shortcuts import render
+from django.shortcuts import render,redirect
 from core.orchestrator import graph
 from reviewer.language_utils import detect_language, is_analyzable
 from reviewer.generic_reviewer import generate_generic_review
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from django.contrib.auth import login as auth_login
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.decorators import login_required
 import os
 import zipfile
 import shutil
@@ -81,7 +84,7 @@ def analyze_directory(directory):
     
     return all_results
 
-
+@login_required
 def review_report(request):
     """
     3 tarike se input le sakta hai: single file, .zip file, ya GitHub URL.
@@ -141,3 +144,19 @@ def review_report(request):
         })
     
     return render(request, "reviewer/report.html", {"show_results": False})
+
+def signup_view(request):
+    """
+    Naya user account banane ke liye. Django ka built-in
+    UserCreationForm use karte hai (username + password).
+    """
+    if request.method == "POST":
+        form = UserCreationForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            auth_login(request, user)
+            return redirect("/")
+    else:
+        form = UserCreationForm()
+    
+    return render(request, "reviewer/signup.html", {"form": form})
