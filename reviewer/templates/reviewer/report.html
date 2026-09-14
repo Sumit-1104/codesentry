@@ -187,7 +187,13 @@
             <span class="dot"></span>
             <h1>CodeSentry</h1>
         </div>
-        <a href="/logout/" style="margin: 0; font-size: 13px;">Logout ({{ request.user.username }})</a>
+        <form method="post" action="/logout/" style="margin: 0;">
+            {% csrf_token %}
+            <button type="submit"
+                style="background: none; border: none; color: var(--accent); font-family: 'Inter', sans-serif; font-size: 13px; cursor: pointer; padding: 0;">
+                Logout ({{ request.user.username }})
+            </button>
+        </form>
     </div>
 
     {% if not show_results %}
