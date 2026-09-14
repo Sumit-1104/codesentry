@@ -92,7 +92,7 @@ def review_report(request):
     """
     3 tarike se input le sakta hai: single file, .zip file, ya GitHub URL.
     Har language ki file analyze hoti hai (Python: full agents, others: LLM review).
-    Result ko history mein bhi save karta hai.
+    Result ko history mein bhi save karta hai, aur summary stats bhi bhejta hai.
     """
 
     if request.method == "POST":
@@ -145,16 +145,21 @@ def review_report(request):
                 "error": "Please provide a GitHub URL or upload a file."
             })
 
-        # Result ko history mein save karo
         AnalysisHistory.objects.create(
             user=request.user,
             source_name=source_name,
             results_json=json.dumps(all_results)
         )
 
+        total_issues = sum(len(r.get("static_results", [])) for r in all_results)
+        total_security = sum(len(r.get("security_results", [])) for r in all_results)
+
         return render(request, "reviewer/report.html", {
             "all_results": all_results,
             "show_results": True,
+            "total_files": len(all_results),
+            "total_issues": total_issues,
+            "total_security": total_security,
         })
 
     return render(request, "reviewer/report.html", {"show_results": False})
@@ -193,7 +198,15 @@ def history_detail_view(request, history_id):
     Ek specific purani report ka poora result dikhata hai.
     """
     entry = AnalysisHistory.objects.get(id=history_id, user=request.user)
+    results = entry.get_results()
+
+    total_issues = sum(len(r.get("static_results", [])) for r in results)
+    total_security = sum(len(r.get("security_results", [])) for r in results)
+
     return render(request, "reviewer/report.html", {
-        "all_results": entry.get_results(),
+        "all_results": results,
         "show_results": True,
+        "total_files": len(results),
+        "total_issues": total_issues,
+        "total_security": total_security,
     })
