@@ -132,6 +132,68 @@
 
         a.back-link { color: var(--accent); text-decoration: none; font-size: 14px; display: inline-block; margin-top: 40px; }
         a.back-link:hover { text-decoration: underline; }
+                .side-panel {
+            position: fixed;
+            top: 50%;
+            right: 24px;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .side-panel button {
+            width: 40px;
+            height: 40px;
+            background: var(--bg-raised);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-dim);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s;
+        }
+
+        .side-panel button:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .side-panel button svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .side-panel .tooltip {
+            position: relative;
+        }
+
+        .side-panel .tooltip::before {
+            content: attr(data-tooltip);
+            position: absolute;
+            right: 50px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: #0F0F0F;
+            border: 1px solid var(--border);
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.15s;
+        }
+
+        .side-panel .tooltip:hover::before {
+            opacity: 1;
+        }
+
+        @media (max-width: 900px) {
+            .side-panel { display: none; }
+        }
     </style>
 </head>
 <body>
@@ -233,6 +295,48 @@
             {% endif %}
         {% endfor %}
 
+
+                <div class="side-panel">
+            <button class="tooltip" data-tooltip="Download Report" onclick="downloadReport()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            </button>
+            <button class="tooltip" data-tooltip="Copy to Clipboard" onclick="copyReport()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            </button>
+            <a href="/" class="tooltip" data-tooltip="New Analysis" style="text-decoration: none;">
+                <button type="button" style="width: 100%; height: 100%;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                </button>
+            </a>
+        </div>
+
+        <script>
+            function getReportText() {
+                let text = "CodeSentry Analysis Report\n\n";
+                document.querySelectorAll('.file-header, h2, .issue, pre, .no-issues').forEach(el => {
+                    text += el.innerText.trim() + "\n";
+                });
+                return text;
+            }
+
+            function downloadReport() {
+                const text = getReportText();
+                const blob = new Blob([text], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'codesentry_report.txt';
+                a.click();
+                URL.revokeObjectURL(url);
+            }
+
+            function copyReport() {
+                const text = getReportText();
+                navigator.clipboard.writeText(text).then(() => {
+                    alert('Report copied to clipboard!');
+                });
+            }
+        </script>
         <a href="/" class="back-link">← Analyze another file</a>
     {% endif %}
 
