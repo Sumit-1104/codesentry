@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>History — CodeSentry</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #141414;
+            --bg-raised: #1c1c1c;
+            --text: #EDEDED;
+            --text-dim: #9A9A9A;
+            --accent: #FF7A45;
+            --border: #2A2A2A;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            max-width: 760px;
+            margin: 0 auto;
+            padding: 60px 24px 100px;
+            line-height: 1.5;
+        }
+
+        .brand {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 48px;
+        }
+
+        .brand-left {
+            display: flex;
+            align-items: baseline;
+            gap: 10px;
+        }
+
+        .dot {
+            width: 10px;
+            height: 10px;
+            background: var(--accent);
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        h1 {
+            font-size: 20px;
+            font-weight: 600;
+            margin: 0;
+            letter-spacing: -0.02em;
+        }
+
+        .nav-links a {
+            color: var(--text-dim);
+            text-decoration: none;
+            font-size: 13px;
+            margin-left: 16px;
+        }
+
+        .nav-links a:hover { color: var(--accent); }
+
+        .history-item {
+            display: block;
+            background: var(--bg-raised);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px 20px;
+            margin-bottom: 12px;
+            text-decoration: none;
+            color: var(--text);
+        }
+
+        .history-item:hover { border-color: var(--accent); }
+
+        .history-name {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            color: var(--accent);
+        }
+
+        .history-date {
+            font-size: 12px;
+            color: var(--text-dim);
+            margin-top: 4px;
+        }
+
+        .empty {
+            color: var(--text-dim);
+            font-size: 14px;
+            text-align: center;
+            padding: 60px 0;
+        }
+
+        form.logout-form { display: inline; }
+        form.logout-form button {
+            background: none; border: none; color: var(--text-dim);
+            font-family: 'Inter', sans-serif; font-size: 13px; cursor: pointer; padding: 0; margin-left: 16px;
+        }
+        form.logout-form button:hover { color: var(--accent); }
+    </style>
+</head>
+<body>
+    <div class="brand">
+        <div class="brand-left">
+            <span class="dot"></span>
+            <h1>CodeSentry</h1>
+        </div>
+        <div class="nav-links">
+            <a href="/">New Analysis</a>
+            <form method="post" action="/logout/" class="logout-form">
+                {% csrf_token %}
+                <button type="submit">Logout ({{ request.user.username }})</button>
+            </form>
+        </div>
+    </div>
+
+    <h2 style="font-size: 14px; color: var(--text-dim); margin-bottom: 20px;">Analysis History</h2>
+
+    {% for entry in history %}
+        <a href="/history/{{ entry.id }}/" class="history-item">
+            <div class="history-name">{{ entry.source_name }}</div>
+            <div class="history-date">{{ entry.created_at }}</div>
+        </a>
+    {% empty %}
+        <p class="empty">No analysis history yet. Go analyze something!</p>
+    {% endfor %}
+</body>
+</html>

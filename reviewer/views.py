@@ -1,7 +1,8 @@
-from django.shortcuts import render,redirect
+from django.shortcuts import render, redirect
 from core.orchestrator import graph
 from reviewer.language_utils import detect_language, is_analyzable
 from reviewer.generic_reviewer import generate_generic_review
+from reviewer.models import AnalysisHistory
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from django.contrib.auth import login as auth_login
 from django.contrib.auth.forms import UserCreationForm
@@ -11,6 +12,7 @@ import zipfile
 import shutil
 import subprocess
 import stat
+import json
 
 
 def remove_readonly(func, path, excinfo):
@@ -29,7 +31,7 @@ def analyze_single_file(filepath, directory):
     """
     language = detect_language(filepath)
     relative_name = os.path.relpath(filepath, directory)
-    
+
     if language == "python":
         result = graph.invoke({"filepath": filepath})
         return {
@@ -61,15 +63,15 @@ def analyze_directory(directory):
             filepath = os.path.join(root, file)
             if is_analyzable(filepath):
                 filepaths.append(filepath)
-    
+
     all_results = []
-    
+
     with ThreadPoolExecutor(max_workers=3) as executor:
         future_to_filepath = {
             executor.submit(analyze_single_file, fp, directory): fp
             for fp in filepaths
         }
-        
+
         for future in as_completed(future_to_filepath):
             try:
                 result = future.result()
@@ -81,25 +83,29 @@ def analyze_directory(directory):
                     "language": "other",
                     "generic_review": f"Error analyzing this file: {str(e)}"
                 })
-    
+
     return all_results
+
 
 @login_required
 def review_report(request):
     """
     3 tarike se input le sakta hai: single file, .zip file, ya GitHub URL.
     Har language ki file analyze hoti hai (Python: full agents, others: LLM review).
+    Result ko history mein bhi save karta hai.
     """
-    
+
     if request.method == "POST":
         extract_dir = os.path.join("data", "extracted")
         if os.path.exists(extract_dir):
             shutil.rmtree(extract_dir, onerror=remove_readonly)
-        
+
         all_results = []
-        
+        source_name = ""
+
         github_url = request.POST.get("github_url", "").strip()
         if github_url:
+            source_name = github_url
             try:
                 result = subprocess.run(
                     ["git", "clone", github_url, extract_dir],
@@ -113,11 +119,12 @@ def review_report(request):
                     "show_results": False,
                     "error": f"Could not clone repo: {str(e)}"
                 })
-        
+
         elif request.FILES.get("code_file"):
             os.makedirs(extract_dir, exist_ok=True)
             uploaded_file = request.FILES["code_file"]
-            
+            source_name = uploaded_file.name
+
             if uploaded_file.name.endswith(".zip"):
                 zip_path = os.path.join("data", "temp_upload.zip")
                 with open(zip_path, "wb+") as destination:
@@ -137,13 +144,21 @@ def review_report(request):
                 "show_results": False,
                 "error": "Please provide a GitHub URL or upload a file."
             })
-        
+
+        # Result ko history mein save karo
+        AnalysisHistory.objects.create(
+            user=request.user,
+            source_name=source_name,
+            results_json=json.dumps(all_results)
+        )
+
         return render(request, "reviewer/report.html", {
             "all_results": all_results,
             "show_results": True,
         })
-    
+
     return render(request, "reviewer/report.html", {"show_results": False})
+
 
 def signup_view(request):
     """
@@ -158,5 +173,27 @@ def signup_view(request):
             return redirect("/")
     else:
         form = UserCreationForm()
-    
+
     return render(request, "reviewer/signup.html", {"form": form})
+
+
+@login_required
+def history_view(request):
+    """
+    Logged-in user ki saari purani analysis reports dikhata hai,
+    jaise ChatGPT ka chat history sidebar.
+    """
+    history = AnalysisHistory.objects.filter(user=request.user)
+    return render(request, "reviewer/history.html", {"history": history})
+
+
+@login_required
+def history_detail_view(request, history_id):
+    """
+    Ek specific purani report ka poora result dikhata hai.
+    """
+    entry = AnalysisHistory.objects.get(id=history_id, user=request.user)
+    return render(request, "reviewer/report.html", {
+        "all_results": entry.get_results(),
+        "show_results": True,
+    })
