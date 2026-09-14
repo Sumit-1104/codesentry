@@ -86,6 +86,17 @@ def analyze_directory(directory):
 
     return all_results
 
+@login_required
+def dashboard_view(request):
+    """
+    Home/landing page — user yaha se decide karta hai
+    New Analysis karna hai ya History dekhni hai.
+    """
+    total_analyses = AnalysisHistory.objects.filter(user=request.user).count()
+    return render(request, "reviewer/dashboard.html", {
+        "total_analyses": total_analyses,
+    })
+
 
 @login_required
 def review_report(request):
