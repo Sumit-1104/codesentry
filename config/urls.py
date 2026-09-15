@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.urls import path
 from django.contrib.auth import views as auth_views
-from reviewer.views import dashboard_view, review_report, signup_view, history_view, history_detail_view, download_pdf_view
+from reviewer.views import dashboard_view, review_report, signup_view, history_view, history_detail_view, download_pdf_view, api_history_list, api_history_detail, api_docs_view
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -13,4 +13,7 @@ urlpatterns = [
     path("history/", history_view, name="history"),
     path("history/<int:history_id>/", history_detail_view, name="history_detail"),
     path("history/<int:history_id>/pdf/", download_pdf_view, name="download_pdf"),
+    path("api/history/", api_history_list, name="api_history_list"),
+    path("api/history/<int:history_id>/", api_history_detail, name="api_history_detail"),
+    path("api/", api_docs_view, name="api_docs"),
 ]

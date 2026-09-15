@@ -11,6 +11,7 @@ from django.contrib.auth.decorators import login_required
 from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet
+from django.http import JsonResponse
 import os
 import zipfile
 import shutil
@@ -334,3 +335,45 @@ def download_pdf_view(request, history_id):
     response = HttpResponse(buffer, content_type="application/pdf")
     response["Content-Disposition"] = f'attachment; filename="codesentry_report_{history_id}.pdf"'
     return response
+
+@login_required
+def api_history_list(request):
+    """
+    API endpoint: user ki saari history JSON format mein deta hai.
+    Test karne ke liye: curl -u username:password http://localhost:8000/api/history/
+    """
+    history = AnalysisHistory.objects.filter(user=request.user)
+    data = [
+        {
+            "id": entry.id,
+            "source_name": entry.source_name,
+            "created_at": entry.created_at.isoformat(),
+        }
+        for entry in history
+    ]
+    return JsonResponse({"count": len(data), "results": data}, json_dumps_params={"indent": 2})
+
+
+@login_required
+def api_history_detail(request, history_id):
+    """
+    API endpoint: ek specific analysis ka poora result JSON mein deta hai.
+    """
+    try:
+        entry = AnalysisHistory.objects.get(id=history_id, user=request.user)
+    except AnalysisHistory.DoesNotExist:
+        return JsonResponse({"error": "Not found"}, status=404)
+
+    return JsonResponse({
+        "id": entry.id,
+        "source_name": entry.source_name,
+        "created_at": entry.created_at.isoformat(),
+        "results": entry.get_results(),
+    }, json_dumps_params={"indent": 2})
+
+def api_docs_view(request):
+    """
+    API documentation page - saare available endpoints,
+    unka use kaise karna hai, examples ke saath.
+    """
+    return render(request, "reviewer/api_docs.html")
