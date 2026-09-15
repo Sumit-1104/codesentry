@@ -7,6 +7,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from django.contrib.auth import login as auth_login
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.decorators import login_required
+import markdown as md
 import os
 import zipfile
 import shutil
@@ -44,10 +45,11 @@ def analyze_single_file(filepath, directory):
         }
     else:
         review = generate_generic_review(filepath)
+        review_html = md.markdown(review, extensions=["tables"])
         return {
             "filename": relative_name,
             "language": "other",
-            "generic_review": review,
+            "generic_review": review_html,
         }
 
 
@@ -86,6 +88,30 @@ def analyze_directory(directory):
 
     return all_results
 
+
+def calculate_grade(total_issues, total_security, total_files):
+    """
+    Ye function issues count ke basis pe ek simple letter grade deta hai.
+    Security issues zyada weight rakhte hai (2x) kyuki wo critical hote hai.
+    """
+    if total_files == 0:
+        return "N/A"
+
+    weighted_issues = total_issues + (total_security * 2)
+    issues_per_file = weighted_issues / total_files
+
+    if issues_per_file == 0:
+        return "A+"
+    elif issues_per_file < 2:
+        return "A"
+    elif issues_per_file < 4:
+        return "B"
+    elif issues_per_file < 7:
+        return "C"
+    else:
+        return "D"
+
+
 @login_required
 def dashboard_view(request):
     """
@@ -103,7 +129,7 @@ def review_report(request):
     """
     3 tarike se input le sakta hai: single file, .zip file, ya GitHub URL.
     Har language ki file analyze hoti hai (Python: full agents, others: LLM review).
-    Result ko history mein bhi save karta hai, aur summary stats bhi bhejta hai.
+    Result ko history mein bhi save karta hai, summary stats aur grade bhi bhejta hai.
     """
 
     if request.method == "POST":
@@ -164,6 +190,7 @@ def review_report(request):
 
         total_issues = sum(len(r.get("static_results", [])) for r in all_results)
         total_security = sum(len(r.get("security_results", [])) for r in all_results)
+        grade = calculate_grade(total_issues, total_security, len(all_results))
 
         return render(request, "reviewer/report.html", {
             "all_results": all_results,
@@ -171,6 +198,7 @@ def review_report(request):
             "total_files": len(all_results),
             "total_issues": total_issues,
             "total_security": total_security,
+            "grade": grade,
         })
 
     return render(request, "reviewer/report.html", {"show_results": False})
@@ -213,6 +241,7 @@ def history_detail_view(request, history_id):
 
     total_issues = sum(len(r.get("static_results", [])) for r in results)
     total_security = sum(len(r.get("security_results", [])) for r in results)
+    grade = calculate_grade(total_issues, total_security, len(results))
 
     return render(request, "reviewer/report.html", {
         "all_results": results,
@@ -220,4 +249,5 @@ def history_detail_view(request, history_id):
         "total_files": len(results),
         "total_issues": total_issues,
         "total_security": total_security,
+        "grade": grade,
     })

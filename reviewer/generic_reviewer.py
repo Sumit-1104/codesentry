@@ -31,18 +31,18 @@ def generate_generic_review(filepath):
     if not code.strip():
         return "File is empty, nothing to review."
     
-    prompt = f"""Ye code file dekho:
+        prompt = f"""Ye code file dekho:
 
 {code}
 
-Is code ka language khud pehchano, aur ek code review do jisme:
-1. Code quality issues (bad practices, unused code, naming issues)
-2. Security concerns (agar koi ho, jaise hardcoded secrets, unsafe patterns)
-3. Missing documentation/comments
-4. Suggested test cases (agar applicable ho is language ke liye)
+Is code ka language khud pehchano. SIRF sabse important 3-4 points do
+bullet points mein (na ki table, na ki lambi list) — jo genuinely
+critical ya useful hai, unhi ko mention karo.
 
-Concise raho, bullet points use karo. Agar file bahut simple/config file hai
-(jaise JSON, CSS), toh sirf relevant sections do.
+Agar file bilkul clean/simple hai (jaise config files, empty files),
+toh sirf ek line likho: "No significant issues found."
+
+Format: chhote bullet points, koi headers/tables nahi, max 100 words.
 """
 
     max_retries = 3

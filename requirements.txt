@@ -14,3 +14,4 @@ pydantic==2.9.0
 pytest==8.3.2
 openai
 GitPython
+markdown

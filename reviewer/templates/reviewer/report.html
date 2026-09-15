@@ -74,7 +74,6 @@
 
         input[type="submit"]:hover { opacity: 0.9; }
 
-        /* Loading animation */
         .loading-box { display: none; text-align: center; padding: 60px 0; }
         .spinner {
             width: 36px; height: 36px; border: 3px solid var(--border);
@@ -84,30 +83,67 @@
         @keyframes spin { to { transform: rotate(360deg); } }
         .loading-box p { color: var(--text-dim); font-size: 14px; }
 
-        /* Summary stats */
-        .summary {
-            display: flex; gap: 12px; margin-bottom: 32px;
-        }
+        .summary { display: flex; gap: 12px; margin-bottom: 32px; }
         .stat-card {
             flex: 1; background: var(--bg-raised); border: 1px solid var(--border);
             border-radius: 8px; padding: 16px; text-align: center;
         }
         .stat-number { font-size: 24px; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
         .stat-label { font-size: 11px; color: var(--text-dim); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
-        .stat-card.danger .stat-number { color: var(--danger); }
-        .stat-card.warning .stat-number { color: var(--warning); }
         .stat-card.success .stat-number { color: var(--success); }
+        .stat-card.warning .stat-number { color: var(--warning); }
+        .stat-card.danger .stat-number { color: var(--danger); }
 
-        .file-header {
-            font-family: 'JetBrains Mono', monospace; font-size: 14px; color: var(--accent);
-            background: var(--bg-raised); border: 1px solid var(--border); padding: 10px 16px;
-            border-radius: 6px; margin-top: 40px; margin-bottom: 16px;
+        .file-card {
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            margin-bottom: 12px;
+            background: var(--bg-raised);
+        }
+
+        .file-card[open] { border-color: var(--accent); }
+
+        .file-card-header {
+            padding: 16px 20px;
+            cursor: pointer;
+            list-style: none;
+        }
+
+        .file-card-header::-webkit-details-marker { display: none; }
+
+        .file-card-header::after {
+            content: "Read more ›";
+            float: right;
+            font-size: 12px;
+            color: var(--accent);
+            margin-top: -32px;
+        }
+
+        .file-card[open] .file-card-header::after { content: "Show less ‹"; }
+
+        .file-card-header:hover { background: rgba(255,255,255,0.02); }
+
+        .file-name {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13.5px;
+            color: var(--accent);
+        }
+
+        .file-summary {
+            font-size: 12px;
+            color: var(--text-dim);
+            margin-top: 4px;
+        }
+
+        .file-card-body {
+            padding: 0 20px 20px 20px;
+            border-top: 1px solid var(--border);
         }
 
         h2 {
             display: flex; align-items: center; gap: 8px;
             font-size: 13px; font-weight: 600; color: var(--text-dim);
-            margin-top: 28px; margin-bottom: 12px; padding-bottom: 8px;
+            margin-top: 20px; margin-bottom: 12px; padding-bottom: 8px;
             border-bottom: 1px solid var(--border);
         }
 
@@ -115,7 +151,7 @@
 
         .issue {
             font-size: 13.5px; padding: 10px 14px; margin: 6px 0;
-            border-left: 3px solid var(--info); background: var(--bg-raised); border-radius: 0 6px 6px 0;
+            border-left: 3px solid var(--info); background: #0F0F0F; border-radius: 0 6px 6px 0;
         }
 
         .issue.warning { border-left-color: var(--warning); }
@@ -130,70 +166,45 @@
             overflow-x: auto; white-space: pre-wrap;
         }
 
+        .markdown-content {
+            font-size: 13px; background: #0F0F0F; border: 1px solid var(--border);
+            padding: 18px; border-radius: 8px;
+        }
+
+        .markdown-content h1, .markdown-content h2, .markdown-content h3 {
+            font-size: 13px; color: var(--accent); margin: 16px 0 8px 0; border: none; padding: 0; display: block;
+        }
+
+        .markdown-content table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 12px; }
+        .markdown-content th, .markdown-content td { border: 1px solid var(--border); padding: 6px 10px; text-align: left; }
+        .markdown-content th { background: var(--bg-raised); color: var(--text-dim); }
+        .markdown-content code { background: var(--bg-raised); padding: 2px 6px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; }
+        .markdown-content pre { background: var(--bg-raised); padding: 12px; border-radius: 6px; overflow-x: auto; }
+        .markdown-content ul, .markdown-content ol { padding-left: 20px; }
+
         a.back-link { color: var(--accent); text-decoration: none; font-size: 14px; display: inline-block; margin-top: 40px; }
         a.back-link:hover { text-decoration: underline; }
-                .side-panel {
-            position: fixed;
-            top: 50%;
-            right: 24px;
-            transform: translateY(-50%);
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
 
+        .side-panel {
+            position: fixed; top: 50%; right: 24px; transform: translateY(-50%);
+            display: flex; flex-direction: column; gap: 10px;
+        }
         .side-panel button {
-            width: 40px;
-            height: 40px;
-            background: var(--bg-raised);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            color: var(--text-dim);
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.15s;
+            width: 40px; height: 40px; background: var(--bg-raised); border: 1px solid var(--border);
+            border-radius: 8px; color: var(--text-dim); cursor: pointer;
+            display: flex; align-items: center; justify-content: center; transition: all 0.15s;
         }
-
-        .side-panel button:hover {
-            border-color: var(--accent);
-            color: var(--accent);
-        }
-
-        .side-panel button svg {
-            width: 18px;
-            height: 18px;
-        }
-
-        .side-panel .tooltip {
-            position: relative;
-        }
-
+        .side-panel button:hover { border-color: var(--accent); color: var(--accent); }
+        .side-panel button svg { width: 18px; height: 18px; }
+        .side-panel .tooltip { position: relative; }
         .side-panel .tooltip::before {
-            content: attr(data-tooltip);
-            position: absolute;
-            right: 50px;
-            top: 50%;
-            transform: translateY(-50%);
-            background: #0F0F0F;
-            border: 1px solid var(--border);
-            padding: 4px 10px;
-            border-radius: 6px;
-            font-size: 12px;
-            white-space: nowrap;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.15s;
+            content: attr(data-tooltip); position: absolute; right: 50px; top: 50%;
+            transform: translateY(-50%); background: #0F0F0F; border: 1px solid var(--border);
+            padding: 4px 10px; border-radius: 6px; font-size: 12px; white-space: nowrap;
+            opacity: 0; pointer-events: none; transition: opacity 0.15s;
         }
-
-        .side-panel .tooltip:hover::before {
-            opacity: 1;
-        }
-
-        @media (max-width: 900px) {
-            .side-panel { display: none; }
-        }
+        .side-panel .tooltip:hover::before { opacity: 1; }
+        @media (max-width: 900px) { .side-panel { display: none; } }
     </style>
 </head>
 <body>
@@ -233,112 +244,97 @@
     {% else %}
         {% if total_issues is not None %}
             <div class="summary">
+                <div class="stat-card success">
+                    <div class="stat-number">{{ grade }}</div>
+                    <div class="stat-label">Grade</div>
+                </div>
                 <div class="stat-card">
                     <div class="stat-number">{{ total_files }}</div>
                     <div class="stat-label">Files</div>
                 </div>
                 <div class="stat-card warning">
                     <div class="stat-number">{{ total_issues }}</div>
-                    <div class="stat-label">Issues Found</div>
+                    <div class="stat-label">Issues</div>
                 </div>
                 <div class="stat-card danger">
                     <div class="stat-number">{{ total_security }}</div>
-                    <div class="stat-label">Security Concerns</div>
+                    <div class="stat-label">Security</div>
                 </div>
             </div>
         {% endif %}
 
         {% for file_result in all_results %}
-            <div class="file-header">{{ file_result.filename }}</div>
-
-            {% if file_result.language == "python" %}
-                <h2>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                    Static Analysis
-                </h2>
-                {% for issue in file_result.static_results %}
-                    <div class="issue {{ issue.type }}">
-                        Line {{ issue.line }} — {{ issue.message }}
+            <details class="file-card">
+                <summary class="file-card-header">
+                    <div class="file-name">{{ file_result.filename }}</div>
+                    <div class="file-summary">
+                        {% if file_result.language == "python" %}
+                            {{ file_result.static_results|length }} issues · {{ file_result.security_results|length }} security concerns
+                        {% else %}
+                            Click to view AI code review
+                        {% endif %}
                     </div>
-                {% empty %}
-                    <p class="no-issues">No issues found.</p>
-                {% endfor %}
+                </summary>
 
-                <h2>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                    Security
-                </h2>
-                {% for issue in file_result.security_results %}
-                    <div class="issue warning">
-                        Line {{ issue.line }} [{{ issue.severity }}] — {{ issue.message }}
-                    </div>
-                {% empty %}
-                    <p class="no-issues">No security issues found.</p>
-                {% endfor %}
+                <div class="file-card-body">
+                    {% if file_result.language == "python" %}
+                        <h2>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                            Static Analysis
+                        </h2>
+                        {% for issue in file_result.static_results %}
+                            <div class="issue {{ issue.type }}">Line {{ issue.line }} — {{ issue.message }}</div>
+                        {% empty %}
+                            <p class="no-issues">No issues found.</p>
+                        {% endfor %}
 
-                <h2>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                    Suggested Docstrings
-                </h2>
-                <pre>{{ file_result.doc_results }}</pre>
+                        <h2>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                            Security
+                        </h2>
+                        {% for issue in file_result.security_results %}
+                            <div class="issue warning">Line {{ issue.line }} [{{ issue.severity }}] — {{ issue.message }}</div>
+                        {% empty %}
+                            <p class="no-issues">No security issues found.</p>
+                        {% endfor %}
 
-                <h2>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-                    Suggested Tests
-                </h2>
-                <pre>{{ file_result.test_results }}</pre>
-            {% else %}
-                <h2>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l9 4.5v9L12 20l-9-4.5v-9z"/></svg>
-                    AI Code Review
-                </h2>
-                <pre>{{ file_result.generic_review }}</pre>
-            {% endif %}
+                        <h2>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                            Suggested Docstrings
+                        </h2>
+                        <pre>{{ file_result.doc_results }}</pre>
+
+                        <h2>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                            Suggested Tests
+                        </h2>
+                        <pre>{{ file_result.test_results }}</pre>
+                    {% else %}
+                        <h2>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l9 4.5v9L12 20l-9-4.5v-9z"/></svg>
+                            AI Code Review
+                        </h2>
+                        <div class="markdown-content">{{ file_result.generic_review|safe }}</div>
+                    {% endif %}
+                </div>
+            </details>
         {% endfor %}
 
-
-                <div class="side-panel">
+        <div class="side-panel">
             <button class="tooltip" data-tooltip="Download Report" onclick="downloadReport()">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
             </button>
             <button class="tooltip" data-tooltip="Copy to Clipboard" onclick="copyReport()">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
             </button>
-                <a href="/analyze/" class="tooltip" data-tooltip="New Analysis" style="text-decoration: none;"></a>
+            <a href="/analyze/" class="tooltip" data-tooltip="New Analysis" style="text-decoration: none;">
                 <button type="button" style="width: 100%; height: 100%;">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                 </button>
             </a>
         </div>
 
-        <script>
-            function getReportText() {
-                let text = "CodeSentry Analysis Report\n\n";
-                document.querySelectorAll('.file-header, h2, .issue, pre, .no-issues').forEach(el => {
-                    text += el.innerText.trim() + "\n";
-                });
-                return text;
-            }
-
-            function downloadReport() {
-                const text = getReportText();
-                const blob = new Blob([text], { type: 'text/plain' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = 'codesentry_report.txt';
-                a.click();
-                URL.revokeObjectURL(url);
-            }
-
-            function copyReport() {
-                const text = getReportText();
-                navigator.clipboard.writeText(text).then(() => {
-                    alert('Report copied to clipboard!');
-                });
-            }
-        </script>
-            <a href="/analyze/" class="back-link">← Analyze another file</a>
+        <a href="/analyze/" class="back-link">← Analyze another file</a>
     {% endif %}
 
     <script>
@@ -347,6 +343,32 @@
             form.addEventListener('submit', function() {
                 document.getElementById('upload-section').style.display = 'none';
                 document.getElementById('loading-box').style.display = 'block';
+            });
+        }
+
+        function getReportText() {
+            let text = "CodeSentry Analysis Report\n\n";
+            document.querySelectorAll('.file-name, h2, .issue, pre, .no-issues, .markdown-content').forEach(el => {
+                text += el.innerText.trim() + "\n";
+            });
+            return text;
+        }
+
+        function downloadReport() {
+            const text = getReportText();
+            const blob = new Blob([text], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'codesentry_report.txt';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function copyReport() {
+            const text = getReportText();
+            navigator.clipboard.writeText(text).then(() => {
+                alert('Report copied to clipboard!');
             });
         }
     </script>
