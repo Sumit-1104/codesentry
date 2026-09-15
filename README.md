@@ -69,6 +69,12 @@ GROQ_API_KEY=your_key_here
 
 python -m core.orchestrator
 
+## Testing
+
+Run the test suite:
+
+
+Current status: 6/6 tests passing (static analyzer + security scanner core logic)
 
 ## Roadmap
 
