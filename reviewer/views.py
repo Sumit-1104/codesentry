@@ -1,4 +1,5 @@
 from django.shortcuts import render, redirect
+from django.http import HttpResponse
 from core.orchestrator import graph
 from reviewer.language_utils import detect_language, is_analyzable
 from reviewer.generic_reviewer import generate_generic_review
@@ -7,13 +8,18 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from django.contrib.auth import login as auth_login
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.decorators import login_required
-import markdown as md
+from reportlab.lib.pagesizes import letter
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet
 import os
 import zipfile
 import shutil
 import subprocess
 import stat
 import json
+import io
+import re
+import markdown as md
 
 
 def remove_readonly(func, path, excinfo):
@@ -112,6 +118,62 @@ def calculate_grade(total_issues, total_security, total_files):
         return "D"
 
 
+def strip_markdown(text):
+    """
+    Ye function markdown symbols (**, #, |, waghera) hata deta hai
+    taaki PDF mein plain readable text dikhe.
+    """
+    text = re.sub(r'\*\*(.*?)\*\*', r'\1', text)
+    text = re.sub(r'#+\s*', '', text)
+    text = re.sub(r'\|', ' ', text)
+    text = re.sub(r'-{3,}', '', text)
+    text = re.sub(r'<[^>]+>', '', text)
+    return text
+
+
+def generate_pdf(source_name, grade, total_files, total_issues, total_security, all_results):
+    """
+    Ye function poore analysis result ko ek professional PDF report
+    mein convert karta hai, reportlab library use karke.
+    """
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=letter)
+    styles = getSampleStyleSheet()
+    story = []
+
+    story.append(Paragraph("CodeSentry Analysis Report", styles["Title"]))
+    story.append(Spacer(1, 12))
+    story.append(Paragraph(f"Source: {source_name}", styles["Normal"]))
+    story.append(Paragraph(f"Grade: {grade} | Files: {total_files} | Issues: {total_issues} | Security: {total_security}", styles["Normal"]))
+    story.append(Spacer(1, 20))
+
+    for file_result in all_results:
+        story.append(Paragraph(file_result["filename"], styles["Heading2"]))
+
+        if file_result.get("language") == "python":
+            story.append(Paragraph("Static Analysis:", styles["Heading3"]))
+            for issue in file_result.get("static_results", []):
+                story.append(Paragraph(f"Line {issue['line']}: {issue['message']}", styles["Normal"]))
+
+            story.append(Paragraph("Security:", styles["Heading3"]))
+            for issue in file_result.get("security_results", []):
+                story.append(Paragraph(f"Line {issue['line']} [{issue['severity']}]: {issue['message']}", styles["Normal"]))
+
+            story.append(Paragraph("Suggested Docstrings:", styles["Heading3"]))
+            doc_text = strip_markdown(file_result.get("doc_results", "") or "")
+            story.append(Paragraph(doc_text.replace("\n", "<br/>"), styles["Normal"]))
+        else:
+            story.append(Paragraph("AI Code Review:", styles["Heading3"]))
+            review_text = strip_markdown(file_result.get("generic_review", "") or "")
+            story.append(Paragraph(review_text.replace("\n", "<br/>"), styles["Normal"]))
+
+        story.append(Spacer(1, 16))
+
+    doc.build(story)
+    buffer.seek(0)
+    return buffer
+
+
 @login_required
 def dashboard_view(request):
     """
@@ -182,7 +244,7 @@ def review_report(request):
                 "error": "Please provide a GitHub URL or upload a file."
             })
 
-        AnalysisHistory.objects.create(
+        entry = AnalysisHistory.objects.create(
             user=request.user,
             source_name=source_name,
             results_json=json.dumps(all_results)
@@ -199,6 +261,7 @@ def review_report(request):
             "total_issues": total_issues,
             "total_security": total_security,
             "grade": grade,
+            "history_id": entry.id,
         })
 
     return render(request, "reviewer/report.html", {"show_results": False})
@@ -250,4 +313,24 @@ def history_detail_view(request, history_id):
         "total_issues": total_issues,
         "total_security": total_security,
         "grade": grade,
+        "history_id": history_id,
     })
+
+
+@login_required
+def download_pdf_view(request, history_id):
+    """
+    Ek history entry ko PDF mein convert karke download karwata hai.
+    """
+    entry = AnalysisHistory.objects.get(id=history_id, user=request.user)
+    results = entry.get_results()
+
+    total_issues = sum(len(r.get("static_results", [])) for r in results)
+    total_security = sum(len(r.get("security_results", [])) for r in results)
+    grade = calculate_grade(total_issues, total_security, len(results))
+
+    buffer = generate_pdf(entry.source_name, grade, len(results), total_issues, total_security, results)
+
+    response = HttpResponse(buffer, content_type="application/pdf")
+    response["Content-Disposition"] = f'attachment; filename="codesentry_report_{history_id}.pdf"'
+    return response

@@ -15,3 +15,4 @@ pytest==8.3.2
 openai
 GitPython
 markdown
+reportlab
