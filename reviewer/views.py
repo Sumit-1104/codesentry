@@ -12,6 +12,10 @@ from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet
 from django.http import JsonResponse
+from rest_framework.decorators import api_view, authentication_classes, permission_classes
+from rest_framework.authentication import TokenAuthentication
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
 import os
 import zipfile
 import shutil
@@ -336,11 +340,13 @@ def download_pdf_view(request, history_id):
     response["Content-Disposition"] = f'attachment; filename="codesentry_report_{history_id}.pdf"'
     return response
 
-@login_required
+@api_view(["GET"])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
 def api_history_list(request):
     """
     API endpoint: user ki saari history JSON format mein deta hai.
-    Test karne ke liye: curl -u username:password http://localhost:8000/api/history/
+    Token-based auth chahiye. Test: curl -H "Authorization: Token YOUR_TOKEN" http://localhost:8000/api/history/
     """
     history = AnalysisHistory.objects.filter(user=request.user)
     data = [
@@ -351,25 +357,28 @@ def api_history_list(request):
         }
         for entry in history
     ]
-    return JsonResponse({"count": len(data), "results": data}, json_dumps_params={"indent": 2})
+    return Response({"count": len(data), "results": data})
 
 
-@login_required
+@api_view(["GET"])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
 def api_history_detail(request, history_id):
     """
     API endpoint: ek specific analysis ka poora result JSON mein deta hai.
+    Token-based auth chahiye.
     """
     try:
         entry = AnalysisHistory.objects.get(id=history_id, user=request.user)
     except AnalysisHistory.DoesNotExist:
-        return JsonResponse({"error": "Not found"}, status=404)
+        return Response({"error": "Not found"}, status=404)
 
-    return JsonResponse({
+    return Response({
         "id": entry.id,
         "source_name": entry.source_name,
         "created_at": entry.created_at.isoformat(),
         "results": entry.get_results(),
-    }, json_dumps_params={"indent": 2})
+    })
 
 def api_docs_view(request):
     """
