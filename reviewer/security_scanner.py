@@ -11,7 +11,9 @@ def scan_file(filepath):
     result = subprocess.run(
         ["bandit", "-f", "json", filepath],
         capture_output=True,
-        text=True
+        text=True,
+        encoding="utf-8",
+        errors="ignore"
     )
     
     try:

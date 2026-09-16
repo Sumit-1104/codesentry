@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>API Docs — CodeSentry</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #141414; --bg-raised: #1c1c1c; --text: #EDEDED;
+            --text-dim: #9A9A9A; --accent: #FF7A45; --border: #2A2A2A; --success: #4ADE80;
+        }
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text);
+            max-width: 780px; margin: 0 auto; padding: 60px 24px 100px; line-height: 1.6;
+        }
+        .brand { display: flex; align-items: baseline; gap: 10px; margin-bottom: 12px; }
+        .dot { width: 10px; height: 10px; background: var(--accent); border-radius: 50%; display: inline-block; }
+        h1 { font-size: 20px; font-weight: 600; margin: 0; letter-spacing: -0.02em; }
+        .subtitle { color: var(--text-dim); font-size: 14px; margin-bottom: 40px; }
+        a.top-link { color: var(--accent); text-decoration: none; font-size: 13px; }
+
+        .endpoint {
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: var(--bg-raised);
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+
+        .endpoint-header { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+
+        .method {
+            background: rgba(74, 222, 128, 0.15);
+            color: var(--success);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 4px;
+        }
+
+        .path {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            color: var(--text);
+        }
+
+        .endpoint p { color: var(--text-dim); font-size: 13.5px; margin: 8px 0 16px 0; }
+
+        .endpoint h4 {
+            font-size: 11px;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin: 16px 0 8px 0;
+        }
+
+        pre {
+            font-family: 'JetBrains Mono', monospace; font-size: 12px; background: #0F0F0F;
+            border: 1px solid var(--border); color: #D4D4D4; padding: 14px;
+            border-radius: 6px; overflow-x: auto; white-space: pre-wrap;
+        }
+
+        .auth-note {
+            background: rgba(255, 122, 69, 0.08);
+            border: 1px solid rgba(255, 122, 69, 0.3);
+            border-radius: 8px;
+            padding: 16px;
+            font-size: 13px;
+            color: var(--text-dim);
+            margin-bottom: 32px;
+        }
+    </style>
+</head>
+<body>
+    <div class="brand">
+        <span class="dot"></span>
+        <h1>CodeSentry API</h1>
+    </div>
+    <p class="subtitle"><a href="/" class="top-link">← Back to Dashboard</a></p>
+
+    <div class="auth-note">
+        <strong>Authentication:</strong> All endpoints require an active login session. Log in through the web dashboard first, then access these endpoints from the same browser session.
+    </div>
+
+    <div class="endpoint">
+        <div class="endpoint-header">
+            <span class="method">GET</span>
+            <span class="path">/api/history/</span>
+        </div>
+        <p>Returns a list of all analyses run by the logged-in user, most recent first.</p>
+
+        <h4>Example Response</h4>
+        <pre>{
+  "count": 2,
+  "results": [
+    {
+      "id": 4,
+      "source_name": "https://github.com/user/repo",
+      "created_at": "2026-09-15T06:33:54.307747+00:00"
+    },
+    {
+      "id": 3,
+      "source_name": "sample_code.py",
+      "created_at": "2026-09-14T07:24:29.820735+00:00"
+    }
+  ]
+}</pre>
+    </div>
+
+    <div class="endpoint">
+        <div class="endpoint-header">
+            <span class="method">GET</span>
+            <span class="path">/api/history/&lt;id&gt;/</span>
+        </div>
+        <p>Returns the full analysis result for one specific entry, including static analysis, security findings, generated docstrings, and tests.</p>
+
+        <h4>Example Response</h4>
+        <pre>{
+  "id": 4,
+  "source_name": "sample_code.py",
+  "created_at": "2026-09-15T06:33:54.307747+00:00",
+  "results": [
+    {
+      "filename": "sample_code.py",
+      "language": "python",
+      "static_results": [...],
+      "security_results": [...],
+      "doc_results": "...",
+      "test_results": "..."
+    }
+  ]
+}</pre>
+    </div>
+
+    <div class="endpoint">
+        <div class="endpoint-header">
+            <span class="method">GET</span>
+            <span class="path">/history/&lt;id&gt;/pdf/</span>
+        </div>
+        <p>Downloads the analysis report for a given entry as a PDF file.</p>
+    </div>
+</body>
+</html>

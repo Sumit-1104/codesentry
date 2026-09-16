@@ -6,6 +6,8 @@ def calculate_total(a,b,c):
     total = a+b+c
     return total
 
+# test change
+
 class userManager:
     def __init__(self):
         self.users = []

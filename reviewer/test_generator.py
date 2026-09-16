@@ -19,7 +19,7 @@ def generate_tests(filepath):
     Rate limit hit hone pe automatically retry karta hai.
     """
     
-    with open(filepath, "r") as f:
+    with open(filepath, "r", encoding="utf-8", errors="ignore") as f:
         code = f.read()
     
     related = search_similar_code(f"code related to: {code[:200]}", n_results=2)
@@ -47,16 +47,20 @@ Sirf test code do, explanation mat do. pytest format use karo (assert statements
             response = client.chat.completions.create(
                 model="openai/gpt-oss-20b",
                 max_tokens=2000,
+                reasoning_effort="low",
                 messages=[{"role": "user", "content": prompt}]
             )
             return response.choices[0].message.content
+        
         except Exception as e:
-            if "rate_limit" in str(e).lower() and attempt < max_retries - 1:
-                wait_time = 15
-                print(f"Rate limit hit, waiting {wait_time}s before retry...")
-                time.sleep(wait_time)
+            error_str = str(e).lower()
+            if "tokens per day" in error_str or "tpd" in error_str:
+                # Daily limit khatam - retry karne ka koi fayda nahi, turant fail ho
+                return "Daily API quota exhausted. Try again tomorrow, or upgrade your Groq plan."
+            elif "rate_limit" in error_str and attempt < max_retries - 1:
+                time.sleep(15)
             else:
-                raise
+                return f"Could not analyze this file: {str(e)}"
 
 
 if __name__ == "__main__":

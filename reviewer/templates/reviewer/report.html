@@ -1,63 +1,411 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>CodeSentry Report</title>
+    <title>CodeSentry</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
-        body { font-family: Arial, sans-serif; max-width: 900px; margin: 40px auto; padding: 20px; background: #f5f5f5; }
-        h1 { color: #2c3e50; }
-        h2 { color: #34495e; border-bottom: 2px solid #ddd; padding-bottom: 5px; }
-        h3 { background: #2c3e50; color: white; padding: 10px 15px; border-radius: 6px; margin-top: 30px; }
-        .issue { background: white; padding: 10px; margin: 8px 0; border-left: 4px solid #e74c3c; border-radius: 4px; }
-        .issue.warning { border-left-color: #f39c12; }
-        .issue.convention { border-left-color: #3498db; }
-        pre { background: #2c3e50; color: #ecf0f1; padding: 15px; border-radius: 6px; overflow-x: auto; }
-        .upload-box { background: white; padding: 30px; border-radius: 8px; text-align: center; }
-        input[type="submit"] { background: #3498db; color: white; border: none; padding: 10px 25px; border-radius: 5px; cursor: pointer; margin-top: 10px; }
+        :root {
+            --bg: #141414;
+            --bg-raised: #1c1c1c;
+            --text: #EDEDED;
+            --text-dim: #9A9A9A;
+            --accent: #FF7A45;
+            --border: #2A2A2A;
+            --danger: #E5484D;
+            --warning: #F5A623;
+            --info: #5B8DEF;
+            --success: #4ADE80;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            max-width: 760px;
+            margin: 0 auto;
+            padding: 60px 24px 100px;
+            line-height: 1.5;
+        }
+
+        .brand {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            width: 100%;
+            margin-bottom: 48px;
+        }
+
+        .brand-left { display: flex; align-items: baseline; gap: 10px; }
+        .dot { width: 10px; height: 10px; background: var(--accent); border-radius: 50%; display: inline-block; }
+        .brand h1 { font-size: 20px; font-weight: 600; margin: 0; letter-spacing: -0.02em; }
+
+        .nav-links { display: flex; align-items: center; }
+        .nav-links a { color: var(--text); text-decoration: none; font-size: 13px; margin-right: 16px; }
+        .nav-links a:hover { color: var(--accent); }
+        .logout-btn { background: none; border: none; color: var(--accent); font-family: 'Inter', sans-serif; font-size: 13px; cursor: pointer; padding: 0; }
+
+        .upload-box {
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 48px 32px;
+            text-align: center;
+            background: var(--bg-raised);
+        }
+
+        .upload-box p { color: var(--text-dim); font-size: 14px; margin-bottom: 20px; }
+
+        input[type="text"] {
+            width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border);
+            background: #0F0F0F; color: var(--text); font-family: 'JetBrains Mono', monospace;
+            font-size: 13px; margin-bottom: 12px;
+        }
+
+        input[type="file"] { font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--text-dim); }
+
+        input[type="submit"] {
+            background: var(--accent); color: #141414; border: none;
+            font-family: 'Inter', sans-serif; font-weight: 600; font-size: 14px;
+            padding: 10px 22px; border-radius: 6px; cursor: pointer; margin-top: 24px;
+            display: block; width: 100%;
+        }
+
+        input[type="submit"]:hover { opacity: 0.9; }
+
+        .loading-box { display: none; text-align: center; padding: 60px 0; }
+        .spinner {
+            width: 36px; height: 36px; border: 3px solid var(--border);
+            border-top-color: var(--accent); border-radius: 50%;
+            margin: 0 auto 20px; animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading-box p { color: var(--text-dim); font-size: 14px; }
+
+        .summary { display: flex; gap: 12px; margin-bottom: 32px; }
+        .stat-card {
+            flex: 1; background: var(--bg-raised); border: 1px solid var(--border);
+            border-radius: 8px; padding: 16px; text-align: center;
+        }
+        .stat-number { font-size: 24px; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+        .stat-label { font-size: 11px; color: var(--text-dim); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
+        .stat-card.success .stat-number { color: var(--success); }
+        .stat-card.warning .stat-number { color: var(--warning); }
+        .stat-card.danger .stat-number { color: var(--danger); }
+
+        .file-card {
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            margin-bottom: 12px;
+            background: var(--bg-raised);
+        }
+
+        .file-card[open] { border-color: var(--accent); }
+
+        .file-card-header {
+            padding: 16px 20px;
+            cursor: pointer;
+            list-style: none;
+        }
+
+        .file-card-header::-webkit-details-marker { display: none; }
+
+        .file-card-header::after {
+            content: "Read more ›";
+            float: right;
+            font-size: 12px;
+            color: var(--accent);
+            margin-top: -32px;
+        }
+
+        .file-card[open] .file-card-header::after { content: "Show less ‹"; }
+
+        .file-card-header:hover { background: rgba(255,255,255,0.02); }
+
+        .file-name {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13.5px;
+            color: var(--accent);
+        }
+
+        .file-summary {
+            font-size: 12px;
+            color: var(--text-dim);
+            margin-top: 4px;
+        }
+
+        .file-card-body {
+            padding: 0 20px 20px 20px;
+            border-top: 1px solid var(--border);
+        }
+
+        h2 {
+            display: flex; align-items: center; gap: 8px;
+            font-size: 13px; font-weight: 600; color: var(--text-dim);
+            margin-top: 20px; margin-bottom: 12px; padding-bottom: 8px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        h2 svg { width: 14px; height: 14px; }
+
+        .no-issues { font-size: 13.5px; color: var(--text-dim); }
+
+        pre {
+            font-family: 'JetBrains Mono', monospace; font-size: 12.5px; background: #0F0F0F;
+            border: 1px solid var(--border); color: #D4D4D4; padding: 18px; border-radius: 8px;
+            overflow-x: auto; white-space: pre-wrap;
+        }
+
+        a.back-link { color: var(--accent); text-decoration: none; font-size: 14px; display: inline-block; margin-top: 40px; }
+        a.back-link:hover { text-decoration: underline; }
+
+        .side-panel {
+            position: fixed; top: 50%; right: 24px; transform: translateY(-50%);
+            display: flex; flex-direction: column; gap: 10px;
+        }
+        .side-panel button {
+            width: 40px; height: 40px; background: var(--bg-raised); border: 1px solid var(--border);
+            border-radius: 8px; color: var(--text-dim); cursor: pointer;
+            display: flex; align-items: center; justify-content: center; transition: all 0.15s;
+        }
+        .side-panel button:hover { border-color: var(--accent); color: var(--accent); }
+        .side-panel button svg { width: 18px; height: 18px; }
+        .side-panel .tooltip { position: relative; }
+        .side-panel .tooltip::before {
+            content: attr(data-tooltip); position: absolute; right: 50px; top: 50%;
+            transform: translateY(-50%); background: #0F0F0F; border: 1px solid var(--border);
+            padding: 4px 10px; border-radius: 6px; font-size: 12px; white-space: nowrap;
+            opacity: 0; pointer-events: none; transition: opacity 0.15s;
+        }
+        .side-panel .tooltip:hover::before { opacity: 1; }
+        @media (max-width: 900px) { .side-panel { display: none; } }
+
+        .code-block {
+            background: #0F0F0F;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow-x: auto;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12.5px;
+            margin-bottom: 20px;
+        }
+
+        .code-line {
+            display: flex;
+            padding: 2px 0;
+        }
+
+        .code-line.has-issue.warning { background: rgba(245, 166, 35, 0.12); }
+        .code-line.has-issue.info { background: rgba(91, 141, 239, 0.12); }
+        .code-line.has-issue.danger { background: rgba(229, 72, 77, 0.15); }
+
+        .line-num {
+            color: var(--text-dim);
+            width: 40px;
+            text-align: right;
+            padding-right: 12px;
+            user-select: none;
+            flex-shrink: 0;
+        }
+
+        .line-content {
+            white-space: pre;
+            color: #D4D4D4;
+        }
+
+        .line-issue-note {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            padding: 4px 12px 4px 52px;
+            font-family: 'Inter', sans-serif;
+            font-size: 12px;
+        }
+
+        .severity-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            margin-top: 4px;
+        }
+
+        .severity-dot.warning { background: var(--warning); }
+        .severity-dot.info { background: var(--info); }
+        .severity-dot.danger { background: var(--danger); }
+
+        .line-issue-note .msg { color: var(--text-dim); }
     </style>
 </head>
 <body>
-    <h1>CodeSentry</h1>
+    <div class="brand">
+        <div class="brand-left">
+            <span class="dot"></span>
+            <h1>CodeSentry</h1>
+        </div>
+        <div class="nav-links">
+            <a href="/">Dashboard</a>
+            <a href="/history/">History</a>
+            <form method="post" action="/logout/" style="display: inline;">
+                {% csrf_token %}
+                <button type="submit" class="logout-btn">Logout ({{ request.user.username }})</button>
+            </form>
+        </div>
+    </div>
 
     {% if not show_results %}
-        <div class="upload-box">
-            <p>Upload a single .py file, or a .zip containing multiple files</p>
-            <form method="post" enctype="multipart/form-data">
+        <div class="upload-box" id="upload-section">
+            {% if error %}
+                <p style="color: var(--danger);">{{ error }}</p>
+            {% endif %}
+            <p>Upload a file, a .zip, or paste a GitHub repo URL</p>
+            <form method="post" enctype="multipart/form-data" id="analyze-form">
                 {% csrf_token %}
-                <input type="file" name="code_file" accept=".py,.zip" required>
-                <br>
+                <input type="text" name="github_url" placeholder="https://github.com/user/repo">
+                <p style="color: var(--text-dim); font-size: 12px; margin: 8px 0;">— or —</p>
+                <input type="file" name="code_file">
                 <input type="submit" value="Analyze">
             </form>
         </div>
+        <div class="loading-box" id="loading-box">
+            <div class="spinner"></div>
+            <p>Analyzing your code — this may take a minute...</p>
+        </div>
     {% else %}
+        {% if total_issues is not None %}
+            <div class="summary">
+                <div class="stat-card success">
+                    <div class="stat-number">{{ grade }}</div>
+                    <div class="stat-label">Grade</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">{{ total_files }}</div>
+                    <div class="stat-label">Files</div>
+                </div>
+                <div class="stat-card warning">
+                    <div class="stat-number">{{ total_issues }}</div>
+                    <div class="stat-label">Issues</div>
+                </div>
+                <div class="stat-card danger">
+                    <div class="stat-number">{{ total_security }}</div>
+                    <div class="stat-label">Security</div>
+                </div>
+            </div>
+        {% endif %}
+
         {% for file_result in all_results %}
-            <h3>{{ file_result.filename }}</h3>
+            <details class="file-card">
+                <summary class="file-card-header">
+                    <div class="file-name">{{ file_result.filename }}</div>
+                    <div class="file-summary">
+                        {% if file_result.language == "python" %}
+                            {{ file_result.static_results|length }} issues · {{ file_result.security_results|length }} security concerns
+                        {% else %}
+                            {{ file_result.annotated_lines|length }} lines analyzed
+                        {% endif %}
+                    </div>
+                </summary>
 
-            <h2>Static Analysis</h2>
-            {% for issue in file_result.static_results %}
-                <div class="issue {{ issue.type }}">
-                    Line {{ issue.line }} [{{ issue.type }}]: {{ issue.message }}
+                <div class="file-card-body">
+                    {% if file_result.language != "python" and file_result.summary %}
+                        <p style="font-size: 13px; color: var(--text-dim); margin-bottom: 16px;">{{ file_result.summary }}</p>
+                    {% endif %}
+
+                    <h2>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg>
+                        Annotated Code
+                    </h2>
+                    <div class="code-block">
+                        {% for line in file_result.annotated_lines %}
+                            <div class="code-line {% if line.issues %}has-issue {{ line.issues.0.severity }}{% endif %}">
+                                <span class="line-num">{{ line.number }}</span>
+                                <span class="line-content">{{ line.content }}</span>
+                            </div>
+                            {% for issue in line.issues %}
+                                <div class="line-issue-note">
+                                    <span class="severity-dot {{ issue.severity }}"></span>
+                                    <span class="msg">{{ issue.message }}</span>
+                                </div>
+                            {% endfor %}
+                        {% endfor %}
+                    </div>
+
+                    {% if file_result.language == "python" %}
+                        <h2>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                            Suggested Docstrings
+                        </h2>
+                        <pre>{{ file_result.doc_results }}</pre>
+
+                        <h2>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                            Suggested Tests
+                        </h2>
+                        <pre>{{ file_result.test_results }}</pre>
+                    {% endif %}
                 </div>
-            {% empty %}
-                <p>No issues found.</p>
-            {% endfor %}
-
-            <h2>Security Issues</h2>
-            {% for issue in file_result.security_results %}
-                <div class="issue">
-                    Line {{ issue.line }} [{{ issue.severity }}]: {{ issue.message }}
-                </div>
-            {% empty %}
-                <p>No security issues found.</p>
-            {% endfor %}
-
-            <h2>Suggested Docstrings</h2>
-            <pre>{{ file_result.doc_results }}</pre>
-
-            <h2>Suggested Tests</h2>
-            <pre>{{ file_result.test_results }}</pre>
+            </details>
         {% endfor %}
 
-        <a href="/">← Analyze another file</a>
+        <div class="side-panel">
+            <button class="tooltip" data-tooltip="Download Report" onclick="downloadReport()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            </button>
+            <button class="tooltip" data-tooltip="Copy to Clipboard" onclick="copyReport()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            </button>
+            {% if history_id %}
+                <a href="/history/{{ history_id }}/pdf/" class="tooltip" data-tooltip="Download PDF" style="text-decoration: none;">
+                    <button type="button" style="width: 100%; height: 100%;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                    </button>
+                </a>
+            {% endif %}
+            <a href="/analyze/" class="tooltip" data-tooltip="New Analysis" style="text-decoration: none;">
+                <button type="button" style="width: 100%; height: 100%;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                </button>
+            </a>
+        </div>
+
+        <a href="/analyze/" class="back-link">← Analyze another file</a>
     {% endif %}
+
+    <script>
+        const form = document.getElementById('analyze-form');
+        if (form) {
+            form.addEventListener('submit', function() {
+                document.getElementById('upload-section').style.display = 'none';
+                document.getElementById('loading-box').style.display = 'block';
+            });
+        }
+
+        function getReportText() {
+            let text = "CodeSentry Analysis Report\n\n";
+            document.querySelectorAll('.file-name, h2, .line-issue-note, pre, .no-issues').forEach(el => {
+                text += el.innerText.trim() + "\n";
+            });
+            return text;
+        }
+
+        function downloadReport() {
+            const text = getReportText();
+            const blob = new Blob([text], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'codesentry_report.txt';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function copyReport() {
+            const text = getReportText();
+            navigator.clipboard.writeText(text).then(() => {
+                alert('Report copied to clipboard!');
+            });
+        }
+    </script>
 </body>
 </html>

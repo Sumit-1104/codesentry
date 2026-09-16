@@ -12,7 +12,9 @@ def analyze_file(filepath):
     result = subprocess.run(
         ["pylint", filepath, "--output-format=json"],
         capture_output=True,
-        text=True
+        text=True,
+        encoding="utf-8",
+        errors="ignore"
     )
     
     # pylint ka output text hota hai, usko Python list/dict mein convert karte hai

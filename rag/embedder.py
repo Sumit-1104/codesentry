@@ -19,7 +19,7 @@ def chunk_code(filepath):
     Ye function ek Python file ko padhta hai aur usse
     function/class ke hisab se chhote chunks mein todta hai.
     """
-    with open(filepath, "r") as f:
+    with open(filepath, "r", encoding="utf-8", errors="ignore") as f:
         lines = f.readlines()
     
     chunks = []
