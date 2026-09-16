@@ -149,15 +149,6 @@
 
         h2 svg { width: 14px; height: 14px; }
 
-        .issue {
-            font-size: 13.5px; padding: 10px 14px; margin: 6px 0;
-            border-left: 3px solid var(--info); background: #0F0F0F; border-radius: 0 6px 6px 0;
-        }
-
-        .issue.warning { border-left-color: var(--warning); }
-        .issue.convention { border-left-color: var(--info); }
-        .issue.refactor { border-left-color: var(--text-dim); }
-
         .no-issues { font-size: 13.5px; color: var(--text-dim); }
 
         pre {
@@ -165,22 +156,6 @@
             border: 1px solid var(--border); color: #D4D4D4; padding: 18px; border-radius: 8px;
             overflow-x: auto; white-space: pre-wrap;
         }
-
-        .markdown-content {
-            font-size: 13px; background: #0F0F0F; border: 1px solid var(--border);
-            padding: 18px; border-radius: 8px;
-        }
-
-        .markdown-content h1, .markdown-content h2, .markdown-content h3 {
-            font-size: 13px; color: var(--accent); margin: 16px 0 8px 0; border: none; padding: 0; display: block;
-        }
-
-        .markdown-content table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 12px; }
-        .markdown-content th, .markdown-content td { border: 1px solid var(--border); padding: 6px 10px; text-align: left; }
-        .markdown-content th { background: var(--bg-raised); color: var(--text-dim); }
-        .markdown-content code { background: var(--bg-raised); padding: 2px 6px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; }
-        .markdown-content pre { background: var(--bg-raised); padding: 12px; border-radius: 6px; overflow-x: auto; }
-        .markdown-content ul, .markdown-content ol { padding-left: 20px; }
 
         a.back-link { color: var(--accent); text-decoration: none; font-size: 14px; display: inline-block; margin-top: 40px; }
         a.back-link:hover { text-decoration: underline; }
@@ -205,6 +180,62 @@
         }
         .side-panel .tooltip:hover::before { opacity: 1; }
         @media (max-width: 900px) { .side-panel { display: none; } }
+
+        .code-block {
+            background: #0F0F0F;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow-x: auto;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12.5px;
+            margin-bottom: 20px;
+        }
+
+        .code-line {
+            display: flex;
+            padding: 2px 0;
+        }
+
+        .code-line.has-issue.warning { background: rgba(245, 166, 35, 0.12); }
+        .code-line.has-issue.info { background: rgba(91, 141, 239, 0.12); }
+        .code-line.has-issue.danger { background: rgba(229, 72, 77, 0.15); }
+
+        .line-num {
+            color: var(--text-dim);
+            width: 40px;
+            text-align: right;
+            padding-right: 12px;
+            user-select: none;
+            flex-shrink: 0;
+        }
+
+        .line-content {
+            white-space: pre;
+            color: #D4D4D4;
+        }
+
+        .line-issue-note {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            padding: 4px 12px 4px 52px;
+            font-family: 'Inter', sans-serif;
+            font-size: 12px;
+        }
+
+        .severity-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            margin-top: 4px;
+        }
+
+        .severity-dot.warning { background: var(--warning); }
+        .severity-dot.info { background: var(--info); }
+        .severity-dot.danger { background: var(--danger); }
+
+        .line-issue-note .msg { color: var(--text-dim); }
     </style>
 </head>
 <body>
@@ -271,33 +302,36 @@
                         {% if file_result.language == "python" %}
                             {{ file_result.static_results|length }} issues · {{ file_result.security_results|length }} security concerns
                         {% else %}
-                            Click to view AI code review
+                            {{ file_result.annotated_lines|length }} lines analyzed
                         {% endif %}
                     </div>
                 </summary>
 
                 <div class="file-card-body">
+                    {% if file_result.language != "python" and file_result.summary %}
+                        <p style="font-size: 13px; color: var(--text-dim); margin-bottom: 16px;">{{ file_result.summary }}</p>
+                    {% endif %}
+
+                    <h2>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg>
+                        Annotated Code
+                    </h2>
+                    <div class="code-block">
+                        {% for line in file_result.annotated_lines %}
+                            <div class="code-line {% if line.issues %}has-issue {{ line.issues.0.severity }}{% endif %}">
+                                <span class="line-num">{{ line.number }}</span>
+                                <span class="line-content">{{ line.content }}</span>
+                            </div>
+                            {% for issue in line.issues %}
+                                <div class="line-issue-note">
+                                    <span class="severity-dot {{ issue.severity }}"></span>
+                                    <span class="msg">{{ issue.message }}</span>
+                                </div>
+                            {% endfor %}
+                        {% endfor %}
+                    </div>
+
                     {% if file_result.language == "python" %}
-                        <h2>
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                            Static Analysis
-                        </h2>
-                        {% for issue in file_result.static_results %}
-                            <div class="issue {{ issue.type }}">Line {{ issue.line }} — {{ issue.message }}</div>
-                        {% empty %}
-                            <p class="no-issues">No issues found.</p>
-                        {% endfor %}
-
-                        <h2>
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                            Security
-                        </h2>
-                        {% for issue in file_result.security_results %}
-                            <div class="issue warning">Line {{ issue.line }} [{{ issue.severity }}] — {{ issue.message }}</div>
-                        {% empty %}
-                            <p class="no-issues">No security issues found.</p>
-                        {% endfor %}
-
                         <h2>
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                             Suggested Docstrings
@@ -309,12 +343,6 @@
                             Suggested Tests
                         </h2>
                         <pre>{{ file_result.test_results }}</pre>
-                    {% else %}
-                        <h2>
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l9 4.5v9L12 20l-9-4.5v-9z"/></svg>
-                            AI Code Review
-                        </h2>
-                        <div class="markdown-content">{{ file_result.generic_review|safe }}</div>
                     {% endif %}
                 </div>
             </details>
@@ -324,6 +352,9 @@
             <button class="tooltip" data-tooltip="Download Report" onclick="downloadReport()">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
             </button>
+            <button class="tooltip" data-tooltip="Copy to Clipboard" onclick="copyReport()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            </button>
             {% if history_id %}
                 <a href="/history/{{ history_id }}/pdf/" class="tooltip" data-tooltip="Download PDF" style="text-decoration: none;">
                     <button type="button" style="width: 100%; height: 100%;">
@@ -331,9 +362,6 @@
                     </button>
                 </a>
             {% endif %}
-            <button class="tooltip" data-tooltip="Copy to Clipboard" onclick="copyReport()">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-            </button>
             <a href="/analyze/" class="tooltip" data-tooltip="New Analysis" style="text-decoration: none;">
                 <button type="button" style="width: 100%; height: 100%;">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -355,7 +383,7 @@
 
         function getReportText() {
             let text = "CodeSentry Analysis Report\n\n";
-            document.querySelectorAll('.file-name, h2, .issue, pre, .no-issues, .markdown-content').forEach(el => {
+            document.querySelectorAll('.file-name, h2, .line-issue-note, pre, .no-issues').forEach(el => {
                 text += el.innerText.trim() + "\n";
             });
             return text;

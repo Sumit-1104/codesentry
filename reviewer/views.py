@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect
 from django.http import HttpResponse
 from core.orchestrator import graph
 from reviewer.language_utils import detect_language, is_analyzable
-from reviewer.generic_reviewer import generate_generic_review
+from reviewer.generic_reviewer import generate_structured_review as generate_generic_review
 from reviewer.models import AnalysisHistory
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from django.contrib.auth import login as auth_login
@@ -36,6 +36,77 @@ def remove_readonly(func, path, excinfo):
     func(path)
 
 
+def build_annotated_lines(filepath, static_results, security_results):
+    """
+    Ye function file ka poora content padhta hai, aur har line ke saath
+    us line pe kaunse issues hai wo jodta hai - taaki code aur issues
+    ek saath, highlighted format mein dikhaye ja sake.
+    """
+    try:
+        with open(filepath, "r", encoding="utf-8", errors="ignore") as f:
+            lines = f.readlines()
+    except Exception:
+        return []
+
+    line_issues = {}
+    for issue in static_results:
+        line_num = issue.get("line")
+        if line_num:
+            line_issues.setdefault(line_num, []).append({
+                "message": issue["message"],
+                "severity": "warning" if issue["type"] == "warning" else "info"
+            })
+
+    for issue in security_results:
+        line_num = issue.get("line")
+        if line_num:
+            line_issues.setdefault(line_num, []).append({
+                "message": issue["message"],
+                "severity": "danger"
+            })
+
+    annotated = []
+    for i, line in enumerate(lines, start=1):
+        annotated.append({
+            "number": i,
+            "content": line.rstrip("\n"),
+            "issues": line_issues.get(i, [])
+        })
+
+    return annotated
+
+
+def build_annotated_lines_from_structured(filepath, issues):
+    """
+    Ye function generic (non-Python) files ke liye annotated lines banata hai,
+    LLM se mile structured issues (line + message + severity) use karke.
+    """
+    try:
+        with open(filepath, "r", encoding="utf-8", errors="ignore") as f:
+            lines = f.readlines()
+    except Exception:
+        return []
+
+    line_issues = {}
+    for issue in issues:
+        line_num = issue.get("line")
+        if line_num:
+            line_issues.setdefault(line_num, []).append({
+                "message": issue.get("message", ""),
+                "severity": issue.get("severity", "info")
+            })
+
+    annotated = []
+    for i, line in enumerate(lines, start=1):
+        annotated.append({
+            "number": i,
+            "content": line.rstrip("\n"),
+            "issues": line_issues.get(i, [])
+        })
+
+    return annotated
+
+
 def analyze_single_file(filepath, directory):
     """
     Ye function ek single file ko analyze karta hai (language detect karke),
@@ -46,23 +117,27 @@ def analyze_single_file(filepath, directory):
 
     if language == "python":
         result = graph.invoke({"filepath": filepath})
+        static_results = result.get("static_results", [])
+        security_results = result.get("security_results", [])
+        annotated_lines = build_annotated_lines(filepath, static_results, security_results)
         return {
             "filename": relative_name,
             "language": "python",
-            "static_results": result.get("static_results", []),
-            "security_results": result.get("security_results", []),
+            "static_results": static_results,
+            "security_results": security_results,
             "doc_results": result.get("doc_results", ""),
             "test_results": result.get("test_results", ""),
+            "annotated_lines": annotated_lines,
         }
     else:
-        review = generate_generic_review(filepath)
-        review_html = md.markdown(review, extensions=["tables"])
+        review_data = generate_generic_review(filepath)
+        annotated_lines = build_annotated_lines_from_structured(filepath,             review_data.get("issues", []))
         return {
             "filename": relative_name,
             "language": "other",
-            "generic_review": review_html,
+            "summary": review_data.get("summary", ""),
+            "annotated_lines": annotated_lines,
         }
-
 
 def analyze_directory(directory):
     """

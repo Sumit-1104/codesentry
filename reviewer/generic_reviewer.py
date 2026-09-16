@@ -1,6 +1,7 @@
 from dotenv import load_dotenv
 import os
 import time
+import json
 from openai import OpenAI
 
 load_dotenv()
@@ -11,38 +12,43 @@ client = OpenAI(
 )
 
 
-def generate_generic_review(filepath):
+def generate_structured_review(filepath):
     """
-    Ye function kisi bhi language ki file ko LLM se review karwata hai
-    (Python ke alawa) - kyuki hamare paas har language ke liye alag
-    static-analysis tool nahi hai, LLM khud reasoning se issues dhoondta hai.
+    Ye function kisi bhi language ki file ko LLM se review karwata hai,
+    aur STRUCTURED JSON format mein line-level issues maangta hai
+    (taaki Python files jaisa hi line-highlighting ho sake).
     """
-    
+
     try:
         with open(filepath, "r", encoding="utf-8", errors="ignore") as f:
             code = f.read()
     except Exception as e:
-        return f"Could not read file: {str(e)}"
-    
-    # Bahut badi files ko chhota kar do (token limit bachane ke liye)
+        return {"summary": f"Could not read file: {str(e)}", "issues": []}
+
     if len(code) > 6000:
         code = code[:6000] + "\n... (truncated)"
-    
+
     if not code.strip():
-        return "File is empty, nothing to review."
-    
-        prompt = f"""Ye code file dekho:
+        return {"summary": "File is empty, nothing to review.", "issues": []}
+
+    prompt = f"""Ye code file dekho (line numbers 1 se shuru hote hai):
 
 {code}
 
-Is code ka language khud pehchano. SIRF sabse important 3-4 points do
-bullet points mein (na ki table, na ki lambi list) — jo genuinely
-critical ya useful hai, unhi ko mention karo.
+Is code ka review karo aur SIRF valid JSON return karo, is exact format mein
+(koi extra text, koi markdown fences, sirf raw JSON):
 
-Agar file bilkul clean/simple hai (jaise config files, empty files),
-toh sirf ek line likho: "No significant issues found."
+{{
+  "summary": "1-2 line overall summary of the file",
+  "issues": [
+    {{"line": 5, "message": "short description of the issue", "severity": "warning"}},
+    {{"line": 12, "message": "short description", "severity": "danger"}}
+  ]
+}}
 
-Format: chhote bullet points, koi headers/tables nahi, max 100 words.
+severity hamesha "info", "warning", ya "danger" mein se ek ho
+(danger = security/critical, warning = code quality, info = style/minor).
+Max 6 issues do, sirf sabse important wale. Agar file clean hai, "issues" khaali list ["]  do.
 """
 
     max_retries = 3
@@ -54,15 +60,28 @@ Format: chhote bullet points, koi headers/tables nahi, max 100 words.
                 reasoning_effort="low",
                 messages=[{"role": "user", "content": prompt}]
             )
-            return response.choices[0].message.content
-        
+            raw = response.choices[0].message.content.strip()
+
+            # Kabhi kabhi LLM ```json fences daal deta hai, unhe hata do
+            if raw.startswith("```"):
+                raw = raw.split("```")[1]
+                if raw.startswith("json"):
+                    raw = raw[4:]
+
+            data = json.loads(raw)
+            return {
+                "summary": data.get("summary", ""),
+                "issues": data.get("issues", [])
+            }
+        except json.JSONDecodeError:
+            return {"summary": raw if 'raw' in dir() else "Could not parse review.", "issues": []}
         except Exception as e:
             error_str = str(e).lower()
             if "tokens per day" in error_str or "tpd" in error_str:
-                # Daily limit khatam - retry karne ka koi fayda nahi, turant fail ho
-                return "Daily API quota exhausted. Try again tomorrow, or upgrade your Groq plan."
+                return {"summary": "Daily API quota exhausted. Try again tomorrow.", "issues": []}
             elif "rate_limit" in error_str and attempt < max_retries - 1:
                 time.sleep(15)
             else:
-                return f"Could not analyze this file: {str(e)}"
-        
+                return {"summary": f"Could not analyze this file: {str(e)}", "issues": []}
+
+    return {"summary": "Analysis failed after retries.", "issues": []}
